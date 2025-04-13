@@ -1,3 +1,4 @@
+
 import logging
 from telegram import Update
 from telegram.ext import (
@@ -6,12 +7,13 @@ from telegram.ext import (
 )
 import smtplib
 from email.mime.text import MIMEText
+import os
 
 # --- Bot Config ---
-BOT_TOKEN = "8059301215:AAF5C0tZV9AofEPWGQ1S4B7PNygeujkvJ18"
-ADMIN_ID = 5000052677
-EMAIL_ADDRESS = "cart76104@gmail.com"
-EMAIL_PASSWORD = "lbdd bwae scce ajyt"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
 
 # --- Logging ---
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +34,9 @@ def send_email(subject, body):
 
 # --- Bot Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    context.user_data["telegram_username"] = f"@{user.username}" if user.username else "No username"
+    context.user_data["telegram_user_id"] = user.id
     await update.message.reply_text("Welcome to Couture Cartel! Let’s start your order.\n\nWhat’s your full name?")
     return NAME
 
@@ -48,7 +53,14 @@ async def get_address(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def get_order(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["order"] = update.message.text
 
-    summary = f"**NEW ORDER**\n\nName: {context.user_data['name']}\nAddress: {context.user_data['address']}\nOrder: {context.user_data['order']}"
+    summary = (
+        f"**NEW ORDER**\n\n"
+        f"Name: {context.user_data['name']}\n"
+        f"Address: {context.user_data['address']}\n"
+        f"Order: {context.user_data['order']}\n\n"
+        f"Telegram Username: {context.user_data['telegram_username']}\n"
+        f"Telegram ID: {context.user_data['telegram_user_id']}"
+    )
 
     # Send to Admin Telegram
     await context.bot.send_message(chat_id=ADMIN_ID, text=summary)
